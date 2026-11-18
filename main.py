@@ -23,9 +23,15 @@ DESTINATION = OUTPUT_DIR / "entry.png"
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(SOURCE, DESTINATION)
-    # Fail loudly rather than hand the grader a truncated copy.
+    # Fail loudly rather than hand the grader a truncated or corrupt copy:
+    # the size must match, and the bytes must start with a JPEG or PNG
+    # signature, since the gate tells the two apart by their first bytes.
     if DESTINATION.stat().st_size != SOURCE.stat().st_size:
         raise RuntimeError("entry.jpg copy is incomplete")
+    with DESTINATION.open("rb") as f:
+        signature = f.read(8)
+    if not (signature.startswith(b"\xff\xd8\xff") or signature.startswith(b"\x89PNG\r\n\x1a\n")):
+        raise RuntimeError("entry.jpg is not a JPEG or PNG image")
 
 
 if __name__ == "__main__":
